@@ -17,7 +17,7 @@ var ErrInvalidPublicKey = errors.New("lk: invalid public key")
 // PrivateKey is the master key to create the licenses. Keep it in a secure
 // location.
 type PrivateKey struct {
-	sm2.PrivateKey
+	key *sm2.PrivateKey
 }
 
 type pkContainer struct {
@@ -31,31 +31,31 @@ func NewPrivateKey() (*PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &PrivateKey{PrivateKey: *tmp}, nil
+	return &PrivateKey{key: tmp}, nil
 }
 
 func (k *PrivateKey) toSM2() *sm2.PrivateKey {
-	return &k.PrivateKey
+	return k.key
 }
 
 // ToBytes transforms the private key to a []byte.
-func (k PrivateKey) ToBytes() ([]byte, error) {
+func (k *PrivateKey) ToBytes() ([]byte, error) {
 	// 使用未压缩格式序列化公钥 (04 || X || Y)
 	pubBytes := make([]byte, 65)
 	pubBytes[0] = 0x04 // 未压缩格式标识
-	k.PrivateKey.PublicKey.X.FillBytes(pubBytes[1:33])
-	k.PrivateKey.PublicKey.Y.FillBytes(pubBytes[33:65])
+	k.key.PublicKey.X.FillBytes(pubBytes[1:33])
+	k.key.PublicKey.Y.FillBytes(pubBytes[33:65])
 
 	c := &pkContainer{
 		Pub: pubBytes,
-		D:   k.PrivateKey.D,
+		D:   k.key.D,
 	}
 
 	return toBytes(c)
 }
 
 // ToB64String transforms the private key to a base64 string.
-func (k PrivateKey) ToB64String() (string, error) {
+func (k *PrivateKey) ToB64String() (string, error) {
 	b, err := k.ToBytes()
 	if err != nil {
 		return "", err
@@ -64,7 +64,7 @@ func (k PrivateKey) ToB64String() (string, error) {
 }
 
 // ToB32String transforms the private key to a base32 string.
-func (k PrivateKey) ToB32String() (string, error) {
+func (k *PrivateKey) ToB32String() (string, error) {
 	b, err := k.ToBytes()
 	if err != nil {
 		return "", err
@@ -73,7 +73,7 @@ func (k PrivateKey) ToB32String() (string, error) {
 }
 
 // ToHexString transforms the private key to a hexadecimal string
-func (k PrivateKey) ToHexString() (string, error) {
+func (k *PrivateKey) ToHexString() (string, error) {
 	b, err := k.ToBytes()
 	if err != nil {
 		return "", err
@@ -107,7 +107,7 @@ func PrivateKeyFromBytes(b []byte) (*PrivateKey, error) {
 		}
 	}
 
-	return &PrivateKey{PrivateKey: *sm2Priv}, nil
+	return &PrivateKey{key: sm2Priv}, nil
 }
 
 // PrivateKeyFromB64String returns a private key from a base64 encoded
@@ -141,10 +141,10 @@ func PrivateKeyFromHexString(str string) (*PrivateKey, error) {
 }
 
 // GetPublicKey returns the PublicKey associated with the private key.
-func (k PrivateKey) GetPublicKey() *PublicKey {
+func (k *PrivateKey) GetPublicKey() *PublicKey {
 	return &PublicKey{
-		X: new(big.Int).Set(k.PrivateKey.PublicKey.X),
-		Y: new(big.Int).Set(k.PrivateKey.PublicKey.Y),
+		X: new(big.Int).Set(k.key.PublicKey.X),
+		Y: new(big.Int).Set(k.key.PublicKey.Y),
 	}
 }
 
@@ -156,7 +156,7 @@ type PublicKey struct {
 }
 
 // ToBytes transforms the public key to a []byte.
-func (k PublicKey) ToBytes() []byte {
+func (k *PublicKey) ToBytes() []byte {
 	// 使用未压缩格式序列化公钥 (04 || X || Y)
 	pkBytes := make([]byte, 65)
 	pkBytes[0] = 0x04 // 未压缩格式标识
@@ -167,21 +167,21 @@ func (k PublicKey) ToBytes() []byte {
 }
 
 // ToB64String transforms the public key to a base64 string.
-func (k PublicKey) ToB64String() string {
+func (k *PublicKey) ToB64String() string {
 	return base64.StdEncoding.EncodeToString(
 		k.ToBytes(),
 	)
 }
 
 // ToB32String transforms the public key to a base32 string.
-func (k PublicKey) ToB32String() string {
+func (k *PublicKey) ToB32String() string {
 	return base32.StdEncoding.EncodeToString(
 		k.ToBytes(),
 	)
 }
 
 // ToHexString transforms the public key to a hexadecimal string.
-func (k PublicKey) ToHexString() string {
+func (k *PublicKey) ToHexString() string {
 	return hex.EncodeToString(
 		k.ToBytes(),
 	)

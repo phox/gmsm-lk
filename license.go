@@ -23,7 +23,7 @@ func NewLicense(k *PrivateKey, data []byte) (*License, error) {
 
 	if h, err := l.hash(); err != nil {
 		return nil, err
-	} else if r, s, err := sm2.SignWithSM2(rand.Reader, &k.PrivateKey.PrivateKey, nil, h); err != nil {
+	} else if r, s, err := sm2.SignWithSM2(rand.Reader, &k.key.PrivateKey, nil, h); err != nil {
 		return nil, err
 	} else {
 		l.R = r
